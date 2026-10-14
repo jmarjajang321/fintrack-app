@@ -1,0 +1,42 @@
+name: Build Flutter APK Otomatis
+
+on:
+  push:
+    branches: [ "main", "master" ]
+  workflow_dispatch: # Memungkinkan tombol 'Run workflow' diklik manual
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 1. Ambil kode dari repositori
+        uses: actions/checkout@v4
+
+      - name: 2. Siapkan Java 17 (Wajib untuk Gradle Android)
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: 3. Install Flutter SDK
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+
+      - name: 4. Lengkapi struktur project Android (jika hanya upload main.dart)
+        run: |
+          cp lib/main.dart /tmp/main_backup.dart
+          flutter create . --project-name fintrack_app --org com.keuangan.fintrack
+          cp /tmp/main_backup.dart lib/main.dart
+
+      - name: 5. Download dependensi & Build APK Release
+        run: |
+          flutter pub get
+          flutter build apk --release
+
+      - name: 6. Simpan file APK agar bisa didownload
+        uses: actions/upload-artifact@v4
+        with:
+          name: FinTrack-Android-APK
+          path: build/app/outputs/flutter-apk/app-release.apk
